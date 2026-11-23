@@ -1,0 +1,302 @@
+{
+  "atomCode": "browserstack",
+  "name": "BrowserStack",
+  "version": "1.0.0",
+  "description": "导出 BROWSERSTACK_* 环境变量、把 .apk/.ipa 传到 App Automate、按 build 名汇总会话并写 buildResults.json（原 browserstack-integration 的步进部分）。",
+  "execution": {
+    "packagePath": "browserstack.jar",
+    "language": "java",
+    "target": "$atom_java_path -cp browserstack.jar com.jenkinschina.atom.sdk.AtomRunner"
+  },
+  "input": {
+    "action": {
+      "label": "动作（env / upload / report）",
+      "type": "vuex-input",
+      "default": "env",
+      "description": "env：把 BROWSERSTACK_* 变量交给后续步骤；upload：把 .apk/.ipa 传到 App Automate，得到 BROWSERSTACK_APP_ID；report：按 build 名取会话，写 buildResults.json。"
+    },
+    "username": {
+      "label": "BrowserStack 用户名",
+      "type": "vuex-input",
+      "default": "",
+      "description": "账号名。导出时会加 -jenkins 后缀（BROWSERSTACK_USERNAME/…USER），与插件一致——BrowserStack 靠它把会话归到 CI 集成里。"
+    },
+    "accessKey": {
+      "label": "Access Key",
+      "type": "password",
+      "default": "",
+      "description": "Account → Settings → Access Key。走 x-jenkins.secrets，不会出现在 input.json 与日志里（日志只打掩码）。"
+    },
+    "product": {
+      "label": "产品（report）",
+      "type": "vuex-input",
+      "default": "automate",
+      "description": "automate → api.browserstack.com/automate；app-automate → api-cloud.browserstack.com/app-automate。upload 动作总是走 app-automate，与插件一致。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "report"
+          }
+        ]
+      }
+    },
+    "apiUrl": {
+      "label": "API 地址（留空用默认）",
+      "type": "vuex-input",
+      "default": "",
+      "description": "覆盖默认 base url，例如 https://api-eu-only.browserstack.com/automate（插件以前靠 GRR region 设置切这个），或代理/录制服务器。结尾的 / 会被去掉。"
+    },
+    "appPath": {
+      "label": "App 路径（.apk / .ipa）",
+      "type": "vuex-input",
+      "default": "",
+      "description": "绝对路径，或相对 workspace 的路径。会先解析符号链接再判扩展名（与 automate-client-java 一致）。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "upload"
+          }
+        ]
+      }
+    },
+    "buildName": {
+      "label": "Build 名（report，默认 ${BUILD_TAG}）",
+      "type": "vuex-input",
+      "default": "${BUILD_TAG}",
+      "description": "BrowserStack 上会话所属的 build 名；留空则回落到构建的 BUILD_TAG。查不到同名 build 会直接报错。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "report"
+          }
+        ]
+      }
+    },
+    "outputDir": {
+      "label": "报告目录（report）",
+      "type": "vuex-input",
+      "default": "browserstack-artifacts",
+      "description": "buildResults.json 写到 workspace 下的这个目录，并按产物归档。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "report"
+          }
+        ]
+      }
+    },
+    "buildTag": {
+      "label": "Build Tag（env，默认 ${BUILD_TAG}）",
+      "type": "vuex-input",
+      "default": "${BUILD_TAG}",
+      "description": "导出成 BROWSERSTACK_BUILD / BROWSERSTACK_BUILD_NAME；同时置 BROWSERSTACK_PLUGIN_INVOKED=true。留空则不导出这几个变量，与插件行为一致。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "env"
+          }
+        ]
+      }
+    },
+    "local": {
+      "label": "Local（env，true 则导出 BROWSERSTACK_LOCAL=true）",
+      "type": "vuex-input",
+      "default": "",
+      "description": "只导变量，不起隧道：插件的隧道由 block 的生命周期启动/停止，单步原子做不到（见 README）。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "env"
+          }
+        ]
+      }
+    },
+    "localIdentifier": {
+      "label": "Local Identifier（env）",
+      "type": "vuex-input",
+      "default": "",
+      "description": "导出 BROWSERSTACK_LOCAL_IDENTIFIER；你自己起的 browserstack-local 进程用它对齐。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "env"
+          }
+        ]
+      }
+    },
+    "rerun": {
+      "label": "Rerun（env）",
+      "type": "vuex-input",
+      "default": "",
+      "description": "导出 BROWSERSTACK_RERUN。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "env"
+          }
+        ]
+      }
+    },
+    "rerunTests": {
+      "label": "Rerun Tests（env）",
+      "type": "vuex-input",
+      "default": "",
+      "description": "导出 BROWSERSTACK_RERUN_TESTS。",
+      "rely": {
+        "operation": "AND",
+        "expression": [
+          {
+            "key": "action",
+            "value": "env"
+          }
+        ]
+      }
+    },
+    "timeoutSeconds": {
+      "label": "超时秒数",
+      "type": "vuex-input",
+      "default": "30",
+      "description": "单次 HTTP 调用的超时（5–300 秒）；env 动作不联网。"
+    }
+  },
+  "output": {
+    "operation": {
+      "type": "string",
+      "description": "实际执行的动作：env / upload / report"
+    },
+    "BROWSERSTACK_USER": {
+      "type": "string",
+      "description": "env：<用户名>-jenkins（插件同名字段）"
+    },
+    "BROWSERSTACK_USERNAME": {
+      "type": "string",
+      "description": "env：<用户名>-jenkins，供 BrowserStack SDK 读取"
+    },
+    "BROWSERSTACK_ACCESSKEY": {
+      "type": "string",
+      "description": "env：Access Key（后续步骤作为环境变量可见，日志只打掩码）"
+    },
+    "BROWSERSTACK_ACCESS_KEY": {
+      "type": "string",
+      "description": "env：同一个 Access Key 的另一种拼写"
+    },
+    "BROWSERSTACK_BUILD": {
+      "type": "string",
+      "description": "env：构建的 BUILD_TAG（没有 BUILD_TAG 时不导出）"
+    },
+    "BROWSERSTACK_BUILD_NAME": {
+      "type": "string",
+      "description": "env：会话归属的 build 名，默认等于 BUILD_TAG"
+    },
+    "BROWSERSTACK_PLUGIN_INVOKED": {
+      "type": "string",
+      "description": "env：导出 build 名时置 true，供测试侧判断环境是插件给的"
+    },
+    "BROWSERSTACK_LOCAL": {
+      "type": "string",
+      "description": "env：local 为 true 时是 true（只导变量，不起隧道）"
+    },
+    "BROWSERSTACK_LOCAL_IDENTIFIER": {
+      "type": "string",
+      "description": "env：Local tunnel 的 identifier"
+    },
+    "BROWSERSTACK_RERUN": {
+      "type": "string",
+      "description": "env：BROWSERSTACK_RERUN 原样透传"
+    },
+    "BROWSERSTACK_RERUN_TESTS": {
+      "type": "string",
+      "description": "env：BROWSERSTACK_RERUN_TESTS 原样透传"
+    },
+    "appUrl": {
+      "type": "string",
+      "description": "upload：BrowserStack 返回的 app url（bs://…）"
+    },
+    "BROWSERSTACK_APP_ID": {
+      "type": "string",
+      "description": "upload：同一个 app url，作为环境变量交给后续步骤"
+    },
+    "uploadedBytes": {
+      "type": "string",
+      "description": "upload：上传的文件字节数"
+    },
+    "uploadAttempts": {
+      "type": "string",
+      "description": "upload：实际尝试次数（1 或 2）"
+    },
+    "httpStatus": {
+      "type": "string",
+      "description": "upload：最后一次应答的 HTTP 状态"
+    },
+    "reportStatus": {
+      "type": "string",
+      "description": "report：Success（有会话）/ Failed（build 存在但没有会话）"
+    },
+    "buildId": {
+      "type": "string",
+      "description": "report：BrowserStack 的 build hashed id"
+    },
+    "totalSessions": {
+      "type": "string",
+      "description": "report：会话数"
+    },
+    "totalErrors": {
+      "type": "string",
+      "description": "report：status=error 或用户标记 failed 的会话数"
+    },
+    "buildDuration": {
+      "type": "string",
+      "description": "report：build 时长，插件那套人类可读格式（01m 05s）"
+    },
+    "reportFile": {
+      "type": "string",
+      "description": "report：buildResults.json 在 workspace 里的相对路径（同时按产物归档）"
+    },
+    "buildBrowserUrl": {
+      "type": "string",
+      "description": "report：BrowserStack 上这个 build 的页面（由会话的 browser_url 推出来）"
+    }
+  },
+  "x-jenkins": {
+    "protocol": "jenkins-1",
+    "requires": {
+      "runner": ">=0.4.0"
+    },
+    "secrets": {
+      "accessKey": ""
+    },
+    "errors": {
+      "41001": "action 不认识：env / upload / report",
+      "41002": "缺 BrowserStack 用户名（username）",
+      "41003": "缺 Access Key（accessKey）",
+      "41004": "upload 缺 appPath，或该文件不存在",
+      "41005": "只接受 .apk / .ipa（符号链接先解析再判）",
+      "41007": "BrowserStack 拒绝了上传（4xx，不重试）",
+      "41008": "上传重试后仍失败（5xx 或连不上）",
+      "41009": "上传返回 2xx 但没有 app_url",
+      "41010": "report 缺 buildName，且构建里没有 BUILD_TAG",
+      "41011": "按名字找不到 build（或匹配到多个）",
+      "41012": "build 应答里没有 hashed_id，列不了会话",
+      "41013": "取 sessions 失败",
+      "41016": "列 builds 失败",
+      "41020": "product 不认识：automate / app-automate"
+    },
+    "category": "report"
+  }
+}

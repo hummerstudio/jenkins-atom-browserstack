@@ -1,0 +1,13 @@
+{
+  "name": "BrowserStack",
+  "summary": "Exports the BrowserStack environment, uploads apps to App Automate, and summarises a build's sessions.",
+  "author": "hummerstudio",
+  "license": "MIT",
+  "tags": [
+    "official-port",
+    "browserstack",
+    "app-automate",
+    "mobile-testing",
+    "test-cloud"
+  ]
+}
